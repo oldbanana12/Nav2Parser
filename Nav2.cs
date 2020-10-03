@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using SystemHalf;
 
@@ -23,19 +21,20 @@ namespace Nav2Parser
             public uint section2Offset;
             public uint o6;
             public Vector3 origin;
-            public uint u1a; //Offset?
+
+            public uint section3Offset; //Offset?
             public uint u1b;
             public uint manifsetOffset;
             public uint manifestLength;
             public uint u1c;
             public uint u1d;
             public ushort xDivisor;
-            public short yDivisor;
+            public ushort yDivisor;
             public ushort zDivisor;
             public ushort u1h; //Offset/Count?
             public byte n7;
             public byte section2EntryCount;
-            public ushort n8;
+            public ushort n8; // Probably padding
             public Vector4Half unknown8;
             public Vector4Half unknown9;
             public uint manifestEntryCount;
@@ -69,7 +68,7 @@ namespace Nav2Parser
 
         public struct NavWorld
         {
-            public uint subsection1Offset;
+            public uint pointArraySectionOffset;
             public uint subsection2Offset;
             public uint subsection4Offset;
             public uint subsection3Offset; //Not read by exe?
@@ -78,25 +77,25 @@ namespace Nav2Parser
             public uint subsection5Offset; //Not read by exe?
             public uint u3; //Not read by exe? Always 0?
             public uint subsection6Offset;
-            public ushort subsection1EntryCount;
-            public ushort subsection4EntryCount;
+            public ushort pointCount;
+            public ushort edgeCount;
             public ushort subsection5EntryCount;
-            public NavWorldSubsection1Entry[] navWorldSubsection1Entries;
-            public NavWorldSubsection2Entry[] navWorldSubsection2Entries;
+            public NavWorldPoint[] navWorldPoints;
+            public NavWorldPointAdjacency[] navworldPointAdjacencies;
             public NavWorldSubsection3Entry[] navWorldSubsection3Entries;
-            public NavWorldSubsection4Entry[] navWorldSubsection4Entries;
-            public NavWorldSubsection5Entry[] navWorldSubsection5Entries;
+            public NavWorldEdge[] navWorldEdges;
+            public NavWorldEdgeFlags[] navWorldEdgeFlags;
             public short[] navWorldSubsection6Entries;
         } //NavWorld
 
-        public struct NavWorldSubsection1Entry
+        public struct NavWorldPoint
         {
             public ushort x;
             public ushort y;
             public ushort z;
         } //NavWorldSubsection1Entry
 
-        public struct NavWorldSubsection2Entry
+        public struct NavWorldPointAdjacency
         {
             public short navWorldSubsection3Index;
             public short u2;
@@ -107,22 +106,21 @@ namespace Nav2Parser
         public struct NavWorldSubsection3Entry
         {
             public ushort[] adjacentNodeIndices;
-            public ushort[] u2;
+            public ushort[] edgeIndices;
             public ushort[] u3;
         }
 
-        public struct NavWorldSubsection4Entry
+        public struct NavWorldEdge
         {
-            public short u1;
-            public short u2;
-            public byte u3;
-            public byte u4;
+            public ushort weight;
+            public ushort subsection5Index;
+            public byte from;
+            public byte to;
         } //NavWorldSubsection4Entry
 
-        public struct NavWorldSubsection5Entry
+        public struct NavWorldEdgeFlags
         {
-            public byte u1;
-            public byte u2;
+            public ushort flags;
         } //NavWorldSubsection5Entry
 
         public struct NavmeshChunk
@@ -138,8 +136,8 @@ namespace Nav2Parser
             public ushort uu5;
             public ushort uu6;
 
-            public ushort numEntries1;
-            public ushort numEntries2;
+            public ushort numFaces;
+            public ushort numVertices;
 
             public ushort u4;
             public ushort u5;
@@ -423,17 +421,14 @@ namespace Nav2Parser
             header.o6 = reader.ReadUInt32();
             header.origin = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
-            var x_index = ((header.u0b % 32) * 2) + (header.u0a / 128);
-            var z_index = (header.u0c * 8) + (header.u0b / 32);
-
-            header.u1a = reader.ReadUInt32();
+            header.section3Offset = reader.ReadUInt32();
             header.u1b = reader.ReadUInt32();
             header.manifsetOffset = reader.ReadUInt32();
             header.manifestLength = reader.ReadUInt32();
             header.u1c = reader.ReadUInt32();
             header.u1d = reader.ReadUInt32();
             header.xDivisor = reader.ReadUInt16();
-            header.yDivisor = reader.ReadInt16();
+            header.yDivisor = reader.ReadUInt16();
             header.zDivisor = reader.ReadUInt16();
             header.u1h = reader.ReadUInt16();
             header.n7 = reader.ReadByte();
@@ -635,19 +630,19 @@ namespace Nav2Parser
             chunk.uu5 = reader.ReadUInt16();
             chunk.uu6 = reader.ReadUInt16();
 
-            chunk.numEntries1 = reader.ReadUInt16();
-            chunk.numEntries2 = reader.ReadUInt16();
+            chunk.numFaces = reader.ReadUInt16();
+            chunk.numVertices = reader.ReadUInt16();
 
             chunk.u4 = reader.ReadUInt16();
             chunk.u5 = reader.ReadUInt16();
 
-            chunk.navmeshChunkSubsection1Entries = new NavmeshChunkSubsection1Entry[chunk.numEntries2];
-            chunk.navmeshChunkSubsection2Entries = new NavmeshChunkSubsection2Entry[chunk.numEntries1];
-            chunk.navmeshChunkSubsection3Entries = new NavmeshChunkSubsection3Entry[chunk.numEntries1];
+            chunk.navmeshChunkSubsection1Entries = new NavmeshChunkSubsection1Entry[chunk.numVertices];
+            chunk.navmeshChunkSubsection2Entries = new NavmeshChunkSubsection2Entry[chunk.numFaces];
+            chunk.navmeshChunkSubsection3Entries = new NavmeshChunkSubsection3Entry[chunk.numFaces];
 
             reader.BaseStream.Position = startPosition + chunk.subsection1Offset;
 
-            for (int i = 0; i < chunk.numEntries2; i++)
+            for (int i = 0; i < chunk.numVertices; i++)
             {
                 NavmeshChunkSubsection1Entry navmeshChunkSubsection1Entry = chunk.navmeshChunkSubsection1Entries[i];
                 navmeshChunkSubsection1Entry.u1 = reader.ReadUInt16();
@@ -663,7 +658,7 @@ namespace Nav2Parser
 
             reader.BaseStream.Position = startPosition + chunk.subsection2Offset;
 
-            for (int i = 0; i < chunk.numEntries1; i++)
+            for (int i = 0; i < chunk.numFaces; i++)
             {
                 NavmeshChunkSubsection2Entry navmeshChunkSubsection2Entry = chunk.navmeshChunkSubsection2Entries[i];
                 navmeshChunkSubsection2Entry.u1 = reader.ReadUInt32();
@@ -673,7 +668,7 @@ namespace Nav2Parser
 
             reader.BaseStream.Position = startPosition + chunk.subsection3Offset;
 
-            for (int i = 0; i < chunk.numEntries1; i++)
+            for (int i = 0; i < chunk.numFaces; i++)
             {
                 reader.BaseStream.Position = startPosition + chunk.subsection3Offset + ((chunk.navmeshChunkSubsection2Entries[i].u1 & 0x3ffff) * 2);
                 NavmeshChunkSubsection3Entry navmeshChunkSubsection3Entry = chunk.navmeshChunkSubsection3Entries[i];
@@ -706,7 +701,7 @@ namespace Nav2Parser
             NavWorld navWorld = new NavWorld();
             long startPosition = reader.BaseStream.Position;
 
-            navWorld.subsection1Offset = reader.ReadUInt32();
+            navWorld.pointArraySectionOffset = reader.ReadUInt32();
             navWorld.subsection2Offset = reader.ReadUInt32();
             navWorld.subsection4Offset = reader.ReadUInt32();
             navWorld.subsection3Offset = reader.ReadUInt32();
@@ -715,60 +710,60 @@ namespace Nav2Parser
             navWorld.subsection5Offset = reader.ReadUInt32();
             navWorld.u3 = reader.ReadUInt32();
             navWorld.subsection6Offset = reader.ReadUInt32();
-            navWorld.subsection1EntryCount = reader.ReadUInt16();
-            navWorld.subsection4EntryCount = reader.ReadUInt16();
+            navWorld.pointCount = reader.ReadUInt16();
+            navWorld.edgeCount = reader.ReadUInt16();
             reader.BaseStream.Position += 6;
             navWorld.subsection5EntryCount = reader.ReadUInt16();
 
-            int count = navWorld.subsection1EntryCount;
-            navWorld.navWorldSubsection1Entries = new NavWorldSubsection1Entry[count];
-            navWorld.navWorldSubsection2Entries = new NavWorldSubsection2Entry[count];
+            int count = navWorld.pointCount;
+            navWorld.navWorldPoints = new NavWorldPoint[count];
+            navWorld.navworldPointAdjacencies = new NavWorldPointAdjacency[count];
             navWorld.navWorldSubsection3Entries = new NavWorldSubsection3Entry[count];
 
-            reader.BaseStream.Position = startPosition + navWorld.subsection1Offset;
+            reader.BaseStream.Position = startPosition + navWorld.pointArraySectionOffset;
 
             for (int i = 0; i < count; i++)
             {
-                NavWorldSubsection1Entry navWorldSubsection1Entry = navWorld.navWorldSubsection1Entries[i];
+                NavWorldPoint navWorldSubsection1Entry = navWorld.navWorldPoints[i];
 
                 navWorldSubsection1Entry.x = reader.ReadUInt16();
                 navWorldSubsection1Entry.y = reader.ReadUInt16(); 
                 navWorldSubsection1Entry.z = reader.ReadUInt16();
 
-                navWorld.navWorldSubsection1Entries[i] = navWorldSubsection1Entry;
+                navWorld.navWorldPoints[i] = navWorldSubsection1Entry;
             } //for
 
             reader.BaseStream.Position = startPosition + navWorld.subsection2Offset;
 
             for (int i = 0; i < count; i++)
             {
-                NavWorldSubsection2Entry navWorldSubsection2 = navWorld.navWorldSubsection2Entries[i];
+                NavWorldPointAdjacency navWorldSubsection2 = navWorld.navworldPointAdjacencies[i];
 
                 navWorldSubsection2.navWorldSubsection3Index = reader.ReadInt16();
                 navWorldSubsection2.u2 = reader.ReadInt16();
                 navWorldSubsection2.countA = reader.ReadByte();
                 navWorldSubsection2.countB = reader.ReadByte();
 
-                navWorld.navWorldSubsection2Entries[i] = navWorldSubsection2;
+                navWorld.navworldPointAdjacencies[i] = navWorldSubsection2;
             } //for
 
             reader.BaseStream.Position = startPosition + navWorld.subsection3Offset;
 
             for (int i = 0; i < count; i++)
             {
-                var navWorldSubsection2 = navWorld.navWorldSubsection2Entries[i];
+                var navWorldSubsection2 = navWorld.navworldPointAdjacencies[i];
 
                 NavWorldSubsection3Entry navWorldSubsection3 = navWorld.navWorldSubsection3Entries[i];
                 navWorldSubsection3.adjacentNodeIndices = new ushort[navWorldSubsection2.countA];
-                navWorldSubsection3.u2 = new ushort[navWorldSubsection2.countA];
+                navWorldSubsection3.edgeIndices = new ushort[navWorldSubsection2.countA];
                 navWorldSubsection3.u3 = new ushort[navWorldSubsection2.countB];
 
-                reader.BaseStream.Position = startPosition + navWorld.subsection3Offset + (navWorld.navWorldSubsection2Entries[i].navWorldSubsection3Index * 2);
+                reader.BaseStream.Position = startPosition + navWorld.subsection3Offset + (navWorld.navworldPointAdjacencies[i].navWorldSubsection3Index * 2);
 
                 for (int j = 0; j < navWorldSubsection2.countA; j++)
                 {
                     navWorldSubsection3.adjacentNodeIndices[j] = reader.ReadUInt16();
-                    navWorldSubsection3.u2[j] = reader.ReadUInt16();
+                    navWorldSubsection3.edgeIndices[j] = reader.ReadUInt16();
                 }
 
                 for (int j = 0; j < navWorldSubsection2.countB; j++)
@@ -779,39 +774,37 @@ namespace Nav2Parser
                 navWorld.navWorldSubsection3Entries[i] = navWorldSubsection3;
             }
 
-            count = navWorld.subsection4EntryCount;
-            navWorld.navWorldSubsection4Entries = new NavWorldSubsection4Entry[count];
+            count = navWorld.edgeCount;
+            navWorld.navWorldEdges = new NavWorldEdge[count];
 
             reader.BaseStream.Position = startPosition + navWorld.subsection4Offset;
 
             for (int i = 0; i < count; i++)
             {
-                NavWorldSubsection4Entry navWorldSubsection4Entry = navWorld.navWorldSubsection4Entries[i];
+                NavWorldEdge navWorldSubsection4Entry = navWorld.navWorldEdges[i];
 
-                navWorldSubsection4Entry.u1 = reader.ReadInt16();
-                navWorldSubsection4Entry.u2 = reader.ReadInt16();
-                navWorldSubsection4Entry.u3 = reader.ReadByte();
-                navWorldSubsection4Entry.u4 = reader.ReadByte();
+                navWorldSubsection4Entry.weight = reader.ReadUInt16();
+                navWorldSubsection4Entry.subsection5Index = reader.ReadUInt16();
+                navWorldSubsection4Entry.from = reader.ReadByte();
+                navWorldSubsection4Entry.to = reader.ReadByte();
 
-                navWorld.navWorldSubsection4Entries[i] = navWorldSubsection4Entry;
+                navWorld.navWorldEdges[i] = navWorldSubsection4Entry;
             } //for
 
             count = navWorld.subsection5EntryCount;
-            navWorld.navWorldSubsection5Entries = new NavWorldSubsection5Entry[count];
+            navWorld.navWorldEdgeFlags = new NavWorldEdgeFlags[count];
 
             reader.BaseStream.Position = startPosition + navWorld.subsection5Offset;
 
             for (int i = 0; i < count; i++)
             {
-                NavWorldSubsection5Entry navWorldSubsection5Entry = navWorld.navWorldSubsection5Entries[i];
+                NavWorldEdgeFlags navWorldSubsection5Entry = navWorld.navWorldEdgeFlags[i];
 
-                navWorldSubsection5Entry.u1 = reader.ReadByte();
-                navWorldSubsection5Entry.u2 = reader.ReadByte();
-
-                navWorld.navWorldSubsection5Entries[i] = navWorldSubsection5Entry;
+                navWorldSubsection5Entry.flags = reader.ReadUInt16();
+                navWorld.navWorldEdgeFlags[i] = navWorldSubsection5Entry;
             } //for
 
-            count = navWorld.subsection1EntryCount;
+            count = navWorld.pointCount;
             navWorld.navWorldSubsection6Entries = new short[count];
 
             reader.BaseStream.Position = startPosition + navWorld.subsection6Offset;
@@ -840,7 +833,7 @@ namespace Nav2Parser
             Console.WriteLine($"Section 2 Offset: 0x{header.section2Offset.ToString("x")}");
             Console.WriteLine($"o6: 0x{header.o6.ToString("x")}");
             Console.WriteLine($"Origin: X: {header.origin.x}, Y: {header.origin.y}, Z: {header.origin.z}");
-            Console.WriteLine($"u1a: 0x{header.u1a.ToString("x")}");
+            Console.WriteLine($"Section 3 Offset: 0x{header.section3Offset.ToString("x")}");
             Console.WriteLine($"u1b: 0x{header.u1b.ToString("x")}");
             Console.WriteLine($"Manifest Offset: 0x{header.manifsetOffset.ToString("x")}");
             Console.WriteLine($"Manifest Length: 0x{header.manifestLength.ToString("x")}");
@@ -915,7 +908,7 @@ namespace Nav2Parser
 
                 Console.WriteLine($"\nNavWorld: {i}");
                 Console.WriteLine("================================================================");
-                Console.WriteLine($"Subsection 1 Offset: 0x{navWorld.subsection1Offset.ToString("x")}");
+                Console.WriteLine($"Point Array Offset: 0x{navWorld.pointArraySectionOffset.ToString("x")}");
                 Console.WriteLine($"Subsection 2 Offset: 0x{navWorld.subsection2Offset.ToString("x")}");
                 Console.WriteLine($"Subsection 4 Offset: 0x{navWorld.subsection4Offset.ToString("x")}");
                 Console.WriteLine($"Subsection 3 Offset: 0x{navWorld.subsection3Offset.ToString("x")}");
@@ -924,30 +917,30 @@ namespace Nav2Parser
                 Console.WriteLine($"Subsection 5 Offset: 0x{navWorld.subsection5Offset.ToString("x")}");
                 Console.WriteLine($"u3: 0x{navWorld.u3.ToString("x")}");
                 Console.WriteLine($"Subsection 6 Offset: 0x{navWorld.subsection6Offset.ToString("x")}");
-                Console.WriteLine($"Subsection 1 Entry Count: 0x{navWorld.subsection1EntryCount.ToString("x")}");
-                Console.WriteLine($"Subsection 4 Entry Count: 0x{navWorld.subsection4EntryCount.ToString("x")}");
+                Console.WriteLine($"Num Points: {navWorld.pointCount}");
+                Console.WriteLine($"Subsection 4 Entry Count: 0x{navWorld.edgeCount.ToString("x")}");
                 Console.WriteLine($"Subsection 5 Entry Count: 0x{navWorld.subsection5EntryCount.ToString("x")}");
 
-                int count = navWorld.navWorldSubsection1Entries.Length;
+                int count = navWorld.navWorldPoints.Length;
 
                 for(int j = 0; j < count; j++)
                 {
-                    NavWorldSubsection1Entry entry = navWorld.navWorldSubsection1Entries[j];
+                    NavWorldPoint entry = navWorld.navWorldPoints[j];
 
-                    Console.WriteLine($"\nSubsection 1 Entry: {j}");
+                    Console.WriteLine($"\nPoint Entry: {j}");
                     Console.WriteLine("----------------------------------------------------------------");
                     Console.WriteLine($"x: {entry.x}");
                     Console.WriteLine($"y: {entry.y}");
                     Console.WriteLine($"z: {entry.z}");
                 } //for
 
-                count = navWorld.navWorldSubsection2Entries.Length;
+                count = navWorld.navworldPointAdjacencies.Length;
 
                 for (int j = 0; j < count; j++)
                 {
-                    NavWorldSubsection2Entry entry = navWorld.navWorldSubsection2Entries[j];
+                    NavWorldPointAdjacency entry = navWorld.navworldPointAdjacencies[j];
 
-                    Console.WriteLine($"\nSubsection 2 Entry: {j}");
+                    Console.WriteLine($"\nPoint Adjacency Entry: {j}");
                     Console.WriteLine("----------------------------------------------------------------");
                     Console.WriteLine($"navWorldSubsection3Index: {entry.navWorldSubsection3Index}");
                     Console.WriteLine($"u2: 0x{entry.u2.ToString("x")}");
@@ -965,37 +958,36 @@ namespace Nav2Parser
                     Console.WriteLine($"\nSubsection 3 Entry: {j}");
                     Console.WriteLine("----------------------------------------------------------------");
                     Console.WriteLine($"Adjacent Node Indices: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].adjacentNodeIndices)}");
-                    Console.WriteLine($"u2: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].u2)}");
+                    Console.WriteLine($"u2: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].edgeIndices)}");
                     Console.WriteLine($"u3: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].u3)}");
 
                 } //for
 
                 Console.WriteLine($"\n");
 
-                count = navWorld.navWorldSubsection4Entries.Length;
+                count = navWorld.navWorldEdges.Length;
 
                 for (int j = 0; j < count; j++)
                 {
-                    NavWorldSubsection4Entry entry = navWorld.navWorldSubsection4Entries[j];
+                    NavWorldEdge entry = navWorld.navWorldEdges[j];
 
-                    Console.WriteLine($"\nSubsection 4 Entry: {j}");
+                    Console.WriteLine($"\nEdge Entry: {j}");
                     Console.WriteLine("----------------------------------------------------------------");
-                    Console.WriteLine($"u1: 0x{entry.u1.ToString("x")}");
-                    Console.WriteLine($"u2: 0x{entry.u2.ToString("x")}");
-                    Console.WriteLine($"u3: 0x{entry.u3.ToString("x")}");
-                    Console.WriteLine($"u4: 0x{entry.u4.ToString("x")}\n");
+                    Console.WriteLine($"Weight: {entry.weight}");
+                    Console.WriteLine($"Subsection 5 Index: {entry.subsection5Index}");
+                    Console.WriteLine($"From: {entry.from}");
+                    Console.WriteLine($"To: {entry.to}\n");
                 } //for
 
-                count = navWorld.navWorldSubsection5Entries.Length;
+                count = navWorld.navWorldEdgeFlags.Length;
 
                 for (int j = 0; j < count; j++)
                 {
-                    NavWorldSubsection5Entry entry = navWorld.navWorldSubsection5Entries[j];
+                    NavWorldEdgeFlags entry = navWorld.navWorldEdgeFlags[j];
 
-                    Console.WriteLine($"\nSubsection 5 Entry: {j}");
+                    Console.WriteLine($"\nFlags Entry: {j}");
                     Console.WriteLine("----------------------------------------------------------------");
-                    Console.WriteLine($"u1: 0x{entry.u1.ToString("x")}");
-                    Console.WriteLine($"u2: 0x{entry.u2.ToString("x")}\n");
+                    Console.WriteLine($"flags: 0x{entry.flags.ToString("x")}\n");
                 } //for
 
                 count = navWorld.navWorldSubsection6Entries.Length;

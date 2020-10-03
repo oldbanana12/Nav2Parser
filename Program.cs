@@ -79,9 +79,9 @@ namespace Nav2Parser
 
                             file.WriteLine("g navworld_points");
 
-                            for (int i = 0; i < nav2.navWorlds[entry.Key].navWorldSubsection1Entries.Length; i++)
+                            for (int i = 0; i < nav2.navWorlds[entry.Key].navWorldPoints.Length; i++)
                             {
-                                var point = nav2.navWorlds[entry.Key].navWorldSubsection1Entries[i];
+                                var point = nav2.navWorlds[entry.Key].navWorldPoints[i];
                                 float x = (float)point.x / (float)nav2.header.xDivisor;
                                 if (point.x > max_x)
                                 {
@@ -108,7 +108,7 @@ namespace Nav2Parser
                                 file.WriteLine("v {0} {1} {2}", x, y, z);
                             }
 
-                            for (int i = 0; i < nav2.navWorlds[entry.Key].navWorldSubsection1Entries.Length; i++)
+                            for (int i = 0; i < nav2.navWorlds[entry.Key].navWorldPoints.Length; i++)
                             {
                                 for (int j = 0; j < nav2.navWorlds[entry.Key].navWorldSubsection3Entries[i].adjacentNodeIndices.Length; j++)
                                 {
@@ -117,7 +117,7 @@ namespace Nav2Parser
                                 }
                             }
 
-                            v += nav2.navWorlds[entry.Key].navWorldSubsection1Entries.Length;
+                            v += nav2.navWorlds[entry.Key].navWorldPoints.Length;
 
                             file.WriteLine("g section2_points");
 
@@ -155,10 +155,10 @@ namespace Nav2Parser
 
                         using (Graphics g = Graphics.FromImage(bmp))
                         {
-                            var length = nav2.navWorlds[entry.Key].navWorldSubsection1Entries.Length;
+                            var length = nav2.navWorlds[entry.Key].navWorldPoints.Length;
                             for (int i = 0; i < length; i++)
                             {
-                                var point = nav2.navWorlds[entry.Key].navWorldSubsection1Entries[i];
+                                var point = nav2.navWorlds[entry.Key].navWorldPoints[i];
 
                                 var x = 2005.0f * (point.x - min_x) / (max_x - min_x);
                                 var z = 2005.0f * (point.z - min_z) / (max_z - min_z);
@@ -169,17 +169,17 @@ namespace Nav2Parser
                                 for (int j = 0; j < n_edges; j++)
                                 {
                                     var adjacent_index = nav2.navWorlds[entry.Key].navWorldSubsection3Entries[i].adjacentNodeIndices[j];
-                                    var adjacent = nav2.navWorlds[entry.Key].navWorldSubsection1Entries[adjacent_index];
+                                    var adjacent = nav2.navWorlds[entry.Key].navWorldPoints[adjacent_index];
 
                                     var adjacent_x = 2005.0f * (adjacent.x - min_x) / (max_x - min_x);
                                     var adjacent_z = 2005.0f * (adjacent.z - min_z) / (max_z - min_z);
 
-                                    var edge_index = nav2.navWorlds[entry.Key].navWorldSubsection3Entries[i].u2[j];
-                                    var edge = nav2.navWorlds[entry.Key].navWorldSubsection4Entries[edge_index];
+                                    var edge_index = nav2.navWorlds[entry.Key].navWorldSubsection3Entries[i].edgeIndices[j];
+                                    var edge = nav2.navWorlds[entry.Key].navWorldEdges[edge_index];
 
                                     g.DrawLine(red_line_pen, x, z, adjacent_x, adjacent_z);
 
-                                    g.DrawString(edge.u1.ToString(), SystemFonts.DefaultFont, Brushes.Black, (x + adjacent_x) / 2, (z + adjacent_z) / 2);
+                                    g.DrawString(edge.weight.ToString(), SystemFonts.DefaultFont, Brushes.Black, (x + adjacent_x) / 2, (z + adjacent_z) / 2);
                                     numEdges++;
 
                                 }
