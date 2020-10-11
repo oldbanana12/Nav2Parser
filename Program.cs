@@ -34,9 +34,9 @@ namespace Nav2Parser
                             var navmesh = nav2.navmeshChunks[entry.Key];
                             foreach (var vertex in navmesh.navmeshChunkSubsection1Entries)
                             {
-                                var f1 = (float)vertex.u1 / (float)nav2.header.xDivisor;
-                                var f2 = (float)vertex.u2 / (float)nav2.header.yDivisor;
-                                var f3 = (float)vertex.u3 / (float)nav2.header.zDivisor;
+                                var f1 = (float)vertex.x / (float)nav2.header.xDivisor;
+                                var f2 = (float)vertex.y / (float)nav2.header.yDivisor;
+                                var f3 = (float)vertex.z / (float)nav2.header.zDivisor;
 
                                 file.WriteLine("v {0} {1} {2}", f1, f2, f3);
                                 v++;
@@ -47,12 +47,12 @@ namespace Nav2Parser
                             {
 
                                 file.WriteLine("g chunk_{0}", c);
-                                for (int i = 0; i < chunk.u6; i++)
+                                for (int i = 0; i < chunk.faces; i++)
                                 {
                                     var navmeshChunk = navmesh.navmeshChunkSubsection3Entries[chunk.navmeshChunkSubsection2EntryIndex + i];
-                                    var f1 = navmeshChunk.u5a + chunk.u1 + 1;
-                                    var f2 = navmeshChunk.u5b + chunk.u1 + 1;
-                                    var f3 = navmeshChunk.u5c + chunk.u1 + 1;
+                                    var f1 = navmeshChunk.vertex1 + chunk.u1 + 1;
+                                    var f2 = navmeshChunk.vertex2 + chunk.u1 + 1;
+                                    var f3 = navmeshChunk.vertex3 + chunk.u1 + 1;
 
                                     file.WriteLine("f {0} {1} {2}", f1, f2, f3);
                                 }

@@ -133,8 +133,6 @@ namespace Nav2Parser
             public ushort uu2;
             public ushort uu3;
             public ushort uu4;
-            public ushort uu5;
-            public ushort uu6;
 
             public ushort numFaces;
             public ushort numVertices;
@@ -143,32 +141,33 @@ namespace Nav2Parser
             public ushort u5;
 
             public NavmeshChunkSubsection1Entry[] navmeshChunkSubsection1Entries;
-            public NavmeshChunkSubsection2Entry[] navmeshChunkSubsection2Entries;
+            public NavmeshChunkFaceOffset[] navmeshChunkFaceOffsets;
             public NavmeshChunkSubsection3Entry[] navmeshChunkSubsection3Entries;
         }
 
         public struct NavmeshChunkSubsection1Entry
         {
-            public ushort u1;
-            public ushort u2;
-            public ushort u3;
+            public ushort x;
+            public ushort y;
+            public ushort z;
         }
 
-        public struct NavmeshChunkSubsection2Entry
+        public struct NavmeshChunkFaceOffset
         {
-            public uint u1;
+            public uint offset;
         }
 
         public struct NavmeshChunkSubsection3Entry
         {
-            public short u1;
-            public short u2;
-            public short u3;
-            public short u4;
+            public short adjacentFace1;
+            public short adjacentFace2;
+            public short adjacentFace3;
+            public short adjacentFace4;
 
-            public byte u5a;
-            public byte u5b;
-            public byte u5c;
+            public byte vertex1;
+            public byte vertex2;
+            public byte vertex3;
+            public byte vertex4;
 
             public byte u6a;
             public byte u6b;
@@ -188,7 +187,7 @@ namespace Nav2Parser
 
             public ushort uu3;
 
-            public uint n6;
+            public uint totalEdges;
 
             public ushort padding;
 
@@ -228,12 +227,13 @@ namespace Nav2Parser
 
         public struct SegmentChunkSubsection1Entry
         {
-            public short u1;
-            public short u2;
-            public short u3;
-            public short u4;
-            public short u5;
-            public short u6;
+            public short x1;
+            public short y1;
+            public short z1;
+
+            public short x2;
+            public short y2;
+            public short z2;
         }
 
         public struct SegmentChunkSubsection2Entry
@@ -242,10 +242,10 @@ namespace Nav2Parser
             public short navmeshChunkSubsection2EntryIndex;
             public short u3;
             public short u4;
-            public byte u5;
-            public byte u6;
+            public byte verts;
+            public byte faces;
             public byte u7;
-            public byte u8;
+            public byte edges;
         }
 
         public struct Section2Entry
@@ -530,7 +530,7 @@ namespace Nav2Parser
             chunk.navworldSegmentGraphSubsection2Entries = new NavworldSegmentGraphSubsection2Entry[chunk.subsection1EntryCount];
 
             chunk.uu3 = reader.ReadUInt16();
-            chunk.n6 = reader.ReadUInt32();
+            chunk.totalEdges = reader.ReadUInt32();
             chunk.padding = reader.ReadUInt16();
 
             for (int i = 0; i < chunk.subsection1EntryCount; i++)
@@ -584,12 +584,12 @@ namespace Nav2Parser
             for (int i = 0; i < chunk.entryCount; i++)
             {
                 SegmentChunkSubsection1Entry segmentChunkSubsection1Entry = chunk.segmentChunkSubsection1Entries[i];
-                segmentChunkSubsection1Entry.u1 = reader.ReadInt16();
-                segmentChunkSubsection1Entry.u2 = reader.ReadInt16();
-                segmentChunkSubsection1Entry.u3 = reader.ReadInt16();
-                segmentChunkSubsection1Entry.u4 = reader.ReadInt16();
-                segmentChunkSubsection1Entry.u5 = reader.ReadInt16();
-                segmentChunkSubsection1Entry.u6 = reader.ReadInt16();
+                segmentChunkSubsection1Entry.x1 = reader.ReadInt16();
+                segmentChunkSubsection1Entry.y1 = reader.ReadInt16();
+                segmentChunkSubsection1Entry.z1 = reader.ReadInt16();
+                segmentChunkSubsection1Entry.x2 = reader.ReadInt16();
+                segmentChunkSubsection1Entry.y2 = reader.ReadInt16();
+                segmentChunkSubsection1Entry.z2 = reader.ReadInt16();
 
                 chunk.segmentChunkSubsection1Entries[i] = segmentChunkSubsection1Entry;
             }
@@ -603,10 +603,10 @@ namespace Nav2Parser
                 segmentChunkSubsection2Entry.navmeshChunkSubsection2EntryIndex = reader.ReadInt16();
                 segmentChunkSubsection2Entry.u3 = reader.ReadInt16();
                 segmentChunkSubsection2Entry.u4 = reader.ReadInt16();
-                segmentChunkSubsection2Entry.u5 = reader.ReadByte();
-                segmentChunkSubsection2Entry.u6 = reader.ReadByte();
+                segmentChunkSubsection2Entry.verts = reader.ReadByte();
+                segmentChunkSubsection2Entry.faces = reader.ReadByte();
                 segmentChunkSubsection2Entry.u7 = reader.ReadByte();
-                segmentChunkSubsection2Entry.u8 = reader.ReadByte();
+                segmentChunkSubsection2Entry.edges = reader.ReadByte();
 
                 chunk.segmentChunkSubsection2Entries[i] = segmentChunkSubsection2Entry;
             }
@@ -627,8 +627,6 @@ namespace Nav2Parser
             chunk.uu2 = reader.ReadUInt16();
             chunk.uu3 = reader.ReadUInt16();
             chunk.uu4 = reader.ReadUInt16();
-            chunk.uu5 = reader.ReadUInt16();
-            chunk.uu6 = reader.ReadUInt16();
 
             chunk.numFaces = reader.ReadUInt16();
             chunk.numVertices = reader.ReadUInt16();
@@ -637,7 +635,7 @@ namespace Nav2Parser
             chunk.u5 = reader.ReadUInt16();
 
             chunk.navmeshChunkSubsection1Entries = new NavmeshChunkSubsection1Entry[chunk.numVertices];
-            chunk.navmeshChunkSubsection2Entries = new NavmeshChunkSubsection2Entry[chunk.numFaces];
+            chunk.navmeshChunkFaceOffsets = new NavmeshChunkFaceOffset[chunk.numFaces];
             chunk.navmeshChunkSubsection3Entries = new NavmeshChunkSubsection3Entry[chunk.numFaces];
 
             reader.BaseStream.Position = startPosition + chunk.subsection1Offset;
@@ -645,13 +643,13 @@ namespace Nav2Parser
             for (int i = 0; i < chunk.numVertices; i++)
             {
                 NavmeshChunkSubsection1Entry navmeshChunkSubsection1Entry = chunk.navmeshChunkSubsection1Entries[i];
-                navmeshChunkSubsection1Entry.u1 = reader.ReadUInt16();
-                navmeshChunkSubsection1Entry.u2 = reader.ReadUInt16();
-                navmeshChunkSubsection1Entry.u3 = reader.ReadUInt16();
+                navmeshChunkSubsection1Entry.x = reader.ReadUInt16();
+                navmeshChunkSubsection1Entry.y = reader.ReadUInt16();
+                navmeshChunkSubsection1Entry.z = reader.ReadUInt16();
 
-                float f1 = (float)navmeshChunkSubsection1Entry.u1 / (float)header.xDivisor;
-                float f2 = (float)navmeshChunkSubsection1Entry.u2 / (float)header.yDivisor;
-                float f3 = (float)navmeshChunkSubsection1Entry.u3 / (float)header.zDivisor;
+                float f1 = (float)navmeshChunkSubsection1Entry.x / (float)header.xDivisor;
+                float f2 = (float)navmeshChunkSubsection1Entry.y / (float)header.yDivisor;
+                float f3 = (float)navmeshChunkSubsection1Entry.z / (float)header.zDivisor;
 
                 chunk.navmeshChunkSubsection1Entries[i] = navmeshChunkSubsection1Entry;
             }
@@ -660,31 +658,35 @@ namespace Nav2Parser
 
             for (int i = 0; i < chunk.numFaces; i++)
             {
-                NavmeshChunkSubsection2Entry navmeshChunkSubsection2Entry = chunk.navmeshChunkSubsection2Entries[i];
-                navmeshChunkSubsection2Entry.u1 = reader.ReadUInt32();
+                NavmeshChunkFaceOffset navmeshChunkSubsection2Entry = chunk.navmeshChunkFaceOffsets[i];
+                navmeshChunkSubsection2Entry.offset = reader.ReadUInt32();
 
-                chunk.navmeshChunkSubsection2Entries[i] = navmeshChunkSubsection2Entry;
+                chunk.navmeshChunkFaceOffsets[i] = navmeshChunkSubsection2Entry;
             }
 
             reader.BaseStream.Position = startPosition + chunk.subsection3Offset;
 
             for (int i = 0; i < chunk.numFaces; i++)
             {
-                reader.BaseStream.Position = startPosition + chunk.subsection3Offset + ((chunk.navmeshChunkSubsection2Entries[i].u1 & 0x3ffff) * 2);
+                reader.BaseStream.Position = startPosition + chunk.subsection3Offset + ((chunk.navmeshChunkFaceOffsets[i].offset & 0x3ffff) * 2);
                 NavmeshChunkSubsection3Entry navmeshChunkSubsection3Entry = chunk.navmeshChunkSubsection3Entries[i];
-                navmeshChunkSubsection3Entry.u1 = reader.ReadInt16();
-                navmeshChunkSubsection3Entry.u2 = reader.ReadInt16();
-                navmeshChunkSubsection3Entry.u3 = reader.ReadInt16();
+                navmeshChunkSubsection3Entry.adjacentFace1 = reader.ReadInt16();
+                navmeshChunkSubsection3Entry.adjacentFace2 = reader.ReadInt16();
+                navmeshChunkSubsection3Entry.adjacentFace3 = reader.ReadInt16();
 
-                var size = (chunk.navmeshChunkSubsection2Entries[i].u1 >> 0x12) & 1;
+                var size = (chunk.navmeshChunkFaceOffsets[i].offset >> 0x12) & 1;
                 if (size != 0)
                 {
-                    navmeshChunkSubsection3Entry.u4 = reader.ReadInt16();
+                    navmeshChunkSubsection3Entry.adjacentFace4 = reader.ReadInt16();
                 }
 
-                navmeshChunkSubsection3Entry.u5a = reader.ReadByte();
-                navmeshChunkSubsection3Entry.u5b = reader.ReadByte();
-                navmeshChunkSubsection3Entry.u5c = reader.ReadByte();
+                navmeshChunkSubsection3Entry.vertex1 = reader.ReadByte();
+                navmeshChunkSubsection3Entry.vertex2 = reader.ReadByte();
+                navmeshChunkSubsection3Entry.vertex3 = reader.ReadByte();
+                if (size != 0)
+                {
+                    navmeshChunkSubsection3Entry.vertex4 = reader.ReadByte();
+                }
 
                 navmeshChunkSubsection3Entry.u6a = reader.ReadByte();
                 navmeshChunkSubsection3Entry.u6b = reader.ReadByte();
@@ -918,7 +920,7 @@ namespace Nav2Parser
                 Console.WriteLine($"u3: 0x{navWorld.u3.ToString("x")}");
                 Console.WriteLine($"Subsection 6 Offset: 0x{navWorld.subsection6Offset.ToString("x")}");
                 Console.WriteLine($"Num Points: {navWorld.pointCount}");
-                Console.WriteLine($"Subsection 4 Entry Count: 0x{navWorld.edgeCount.ToString("x")}");
+                Console.WriteLine($"Num Edges: {navWorld.edgeCount}");
                 Console.WriteLine($"Subsection 5 Entry Count: 0x{navWorld.subsection5EntryCount.ToString("x")}");
 
                 int count = navWorld.navWorldPoints.Length;
@@ -958,7 +960,7 @@ namespace Nav2Parser
                     Console.WriteLine($"\nSubsection 3 Entry: {j}");
                     Console.WriteLine("----------------------------------------------------------------");
                     Console.WriteLine($"Adjacent Node Indices: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].adjacentNodeIndices)}");
-                    Console.WriteLine($"u2: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].edgeIndices)}");
+                    Console.WriteLine($"Edge Indices: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].edgeIndices)}");
                     Console.WriteLine($"u3: {string.Join(", ", navWorld.navWorldSubsection3Entries[j].u3)}");
 
                 } //for
