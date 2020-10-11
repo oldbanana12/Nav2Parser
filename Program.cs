@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -22,69 +21,21 @@ namespace Nav2Parser
 
             bool exit = false;
 
+            string prefix = Path.GetFileNameWithoutExtension(args[0]);
+
             foreach (KeyValuePair<byte, Nav2.SegmentChunk> entry in nav2.segmentChunks)
             {
                 uint max_x = 0;
                 uint max_z = 0;
                 uint min_x = 0;
                 uint min_z = 0;
-
-                using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}.obj", Path.GetFileNameWithoutExtension(args[0]), entry.Key)))
-                {
-                    int v = 1;
-                    var navmesh = nav2.navmeshChunks[entry.Key];
-                    foreach (var vertex in navmesh.navmeshChunkSubsection1Entries)
-                    {
-                        var f1 = (float)vertex.x / (float)nav2.header.xDivisor;
-                        var f2 = (float)vertex.y / (float)nav2.header.yDivisor;
-                        var f3 = (float)vertex.z / (float)nav2.header.zDivisor;
-
-                        file.WriteLine("v {0} {1} {2}", f1, f2, f3);
-                        v++;
-                    }
-
-                    int c = 0;
-                    foreach (var chunk in entry.Value.segmentChunkSubsection2Entries)
-                    {
-
-                        file.WriteLine("g chunk_{0}", c);
-                        for (int i = 0; i < chunk.faces; i++)
-                        {
-                            var navmeshChunk = navmesh.navmeshChunkSubsection3Entries[chunk.navmeshChunkSubsection2EntryIndex + i];
-                            var f1 = navmeshChunk.vertex1 + chunk.vertexIndexOffset + 1;
-                            var f2 = navmeshChunk.vertex2 + chunk.vertexIndexOffset + 1;
-                            var f3 = navmeshChunk.vertex3 + chunk.vertexIndexOffset + 1;
-
-                            file.WriteLine("f {0} {1} {2}", f1, f2, f3);
-                        }
-
-                        c++;
-                    }
-                }
-
-                using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_segmentGraph.obj", Path.GetFileNameWithoutExtension(args[0]), entry.Key)))
-                {
-                    int v = 1;
-
-                    foreach (var node in nav2.segmentGraphs[entry.Key].navworldSegmentGraphSubsection1Entries)
-                    {
-                        float x = (float)node.x / (float)nav2.header.xDivisor;
-                        float y = (float)node.y / (float)nav2.header.yDivisor;
-                        float z = (float)node.z / (float)nav2.header.zDivisor;
-
-                        file.WriteLine("v {0} {1} {2}", x - 0.5, y + 0.5, z - 0.5);
-                        file.WriteLine("v {0} {1} {2}", x - 0.5, y + 0.5, z + 0.5);
-                        file.WriteLine("v {0} {1} {2}", x + 0.5, y + 0.5, z - 0.5);
-                        file.WriteLine("v {0} {1} {2}", x + 0.5, y + 0.5, z + 0.5);
-
-                        file.WriteLine("f {0} {1} {2} {3}", v, v + 1, v + 2, v + 3);
-                        v += 4;
-                    }
-                }
+                
+                ExtractNavmesh(prefix, nav2, entry.Key);
+                ExtractSegmentGraph(prefix, nav2, entry.Key);
+                ExtractSection2(prefix, nav2, entry.Key);
 
                 using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_navworld.obj", Path.GetFileNameWithoutExtension(args[0]), entry.Key)))
                 {
-
                     int v = 1;
 
                     for (int i = 0; i < nav2.navWorlds[entry.Key].navWorldPoints.Length; i++)
@@ -127,35 +78,6 @@ namespace Nav2Parser
 
                     v += nav2.navWorlds[entry.Key].navWorldPoints.Length;
                 }
-
-                if (nav2.header.section2EntryCount > 0)
-                {
-                    using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_section2.obj", Path.GetFileNameWithoutExtension(args[0]), entry.Key)))
-                    {
-                        int v = 1;
-
-                        foreach (var section2_entry in nav2.section2Entries[0].subsection1Entries)
-                        {
-                            float x = (float)section2_entry.x / (float)nav2.header.xDivisor;
-                            float y = (float)section2_entry.y / (float)nav2.header.yDivisor;
-                            float z = (float)section2_entry.z / (float)nav2.header.zDivisor;
-
-                            file.WriteLine("v {0} {1} {2}", x, y, z);
-                        }
-
-                        for (int i = 0; i < nav2.section2Entries[0].subsection1Entries.Length; i++)
-                        {
-                            for (int j = 0; j < nav2.section2Entries[0].subsection2Entries[i].u2.Length; j++)
-                            {
-                                var adjacentEdge = nav2.section2Entries[0].subsection2Entries[i].u2[j];
-                                file.WriteLine("l {0} {1}", v + i, v + adjacentEdge);
-                            }
-                        }
-
-                        v += nav2.section2Entries[0].subsection1Entries.Length;
-                    }
-                }
-
 
                 Bitmap bmp = new Bitmap(2010, 2010);
 
@@ -232,5 +154,94 @@ namespace Nav2Parser
                 } //switch
             } //while
         } //Main
+        private static void ExtractNavmesh(string prefix, Nav2 nav2, byte group)
+        {
+            using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}.obj", prefix, group)))
+            {
+                int v = 1;
+                var navmesh = nav2.navmeshChunks[group];
+                foreach (var vertex in navmesh.navmeshChunkSubsection1Entries)
+                {
+                    var f1 = (float)vertex.x / (float)nav2.header.xDivisor;
+                    var f2 = (float)vertex.y / (float)nav2.header.yDivisor;
+                    var f3 = (float)vertex.z / (float)nav2.header.zDivisor;
+
+                    file.WriteLine("v {0} {1} {2}", f1, f2, f3);
+                    v++;
+                }
+
+                int c = 0;
+                foreach (var chunk in nav2.segmentChunks[group].segmentChunkSubsection2Entries)
+                {
+
+                    file.WriteLine("g chunk_{0}", c);
+                    for (int i = 0; i < chunk.faces; i++)
+                    {
+                        var navmeshChunk = navmesh.navmeshChunkSubsection3Entries[chunk.navmeshChunkSubsection2EntryIndex + i];
+                        var f1 = navmeshChunk.vertex1 + chunk.vertexIndexOffset + 1;
+                        var f2 = navmeshChunk.vertex2 + chunk.vertexIndexOffset + 1;
+                        var f3 = navmeshChunk.vertex3 + chunk.vertexIndexOffset + 1;
+
+                        file.WriteLine("f {0} {1} {2}", f1, f2, f3);
+                    }
+
+                    c++;
+                }
+            }
+        }
+
+        private static void ExtractSegmentGraph (string prefix, Nav2 nav2, byte group)
+        {
+            using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_segmentGraph.obj", prefix, group)))
+            {
+                int v = 1;
+
+                foreach (var node in nav2.segmentGraphs[group].navworldSegmentGraphSubsection1Entries)
+                {
+                    float x = (float)node.x / (float)nav2.header.xDivisor;
+                    float y = (float)node.y / (float)nav2.header.yDivisor;
+                    float z = (float)node.z / (float)nav2.header.zDivisor;
+
+                    file.WriteLine("v {0} {1} {2}", x - 0.5, y + 0.5, z - 0.5);
+                    file.WriteLine("v {0} {1} {2}", x - 0.5, y + 0.5, z + 0.5);
+                    file.WriteLine("v {0} {1} {2}", x + 0.5, y + 0.5, z - 0.5);
+                    file.WriteLine("v {0} {1} {2}", x + 0.5, y + 0.5, z + 0.5);
+
+                    file.WriteLine("f {0} {1} {2} {3}", v, v + 1, v + 2, v + 3);
+                    v += 4;
+                }
+            }
+        }
+
+        private static void ExtractSection2(string prefix, Nav2 nav2, byte group)
+        {
+            if (nav2.header.section2EntryCount > 0)
+            {
+                using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_section2.obj", prefix, group)))
+                {
+                    int v = 1;
+
+                    foreach (var section2_entry in nav2.section2Entries[0].subsection1Entries)
+                    {
+                        float x = (float)section2_entry.x / (float)nav2.header.xDivisor;
+                        float y = (float)section2_entry.y / (float)nav2.header.yDivisor;
+                        float z = (float)section2_entry.z / (float)nav2.header.zDivisor;
+
+                        file.WriteLine("v {0} {1} {2}", x, y, z);
+                    }
+
+                    for (int i = 0; i < nav2.section2Entries[0].subsection1Entries.Length; i++)
+                    {
+                        for (int j = 0; j < nav2.section2Entries[0].subsection2Entries[i].u2.Length; j++)
+                        {
+                            var adjacentEdge = nav2.section2Entries[0].subsection2Entries[i].u2[j];
+                            file.WriteLine("l {0} {1}", v + i, v + adjacentEdge);
+                        }
+                    }
+
+                    v += nav2.section2Entries[0].subsection1Entries.Length;
+                }
+            }
+        }
     } //class
 } //namespace
