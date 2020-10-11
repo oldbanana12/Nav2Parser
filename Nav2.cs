@@ -240,7 +240,7 @@ namespace Nav2Parser
 
         public struct SegmentChunkSubsection2Entry
         {
-            public short u1;
+            public short vertexIndexOffset;
             public short navmeshChunkSubsection2EntryIndex;
             public short u3;
             public short u4;
@@ -601,7 +601,7 @@ namespace Nav2Parser
             for (int i = 0; i < chunk.entryCount; i++)
             {
                 SegmentChunkSubsection2Entry segmentChunkSubsection2Entry = chunk.segmentChunkSubsection2Entries[i];
-                segmentChunkSubsection2Entry.u1 = reader.ReadInt16();
+                segmentChunkSubsection2Entry.vertexIndexOffset = reader.ReadInt16();
                 segmentChunkSubsection2Entry.navmeshChunkSubsection2EntryIndex = reader.ReadInt16();
                 segmentChunkSubsection2Entry.u3 = reader.ReadInt16();
                 segmentChunkSubsection2Entry.u4 = reader.ReadInt16();
