@@ -133,6 +133,8 @@ namespace Nav2Parser
             public ushort uu2;
             public ushort uu3;
             public ushort uu4;
+            public ushort uu5;
+            public ushort uu6;
 
             public ushort numFaces;
             public ushort numVertices;
@@ -627,6 +629,8 @@ namespace Nav2Parser
             chunk.uu2 = reader.ReadUInt16();
             chunk.uu3 = reader.ReadUInt16();
             chunk.uu4 = reader.ReadUInt16();
+            chunk.uu5 = reader.ReadUInt16();
+            chunk.uu6 = reader.ReadUInt16();
 
             chunk.numFaces = reader.ReadUInt16();
             chunk.numVertices = reader.ReadUInt16();
