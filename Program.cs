@@ -25,7 +25,6 @@ namespace Nav2Parser
             // The fact we use segmentChunks here is irrelevant, all of the blocks have the same group IDs
             foreach (var group in nav2.segmentChunks.Keys)
             {
-
                 ExtractNavmesh(prefix, nav2, group);
                 ExtractSegmentGraph(prefix, nav2, group);
                 ExtractSection2(prefix, nav2, group);
@@ -82,24 +81,16 @@ namespace Nav2Parser
             {
                 var point = nav2.navWorlds[group].navWorldPoints[i];
                 if (point.x > max_x)
-                {
                     max_x = point.x;
-                }
 
                 if (point.x < min_x)
-                {
                     min_x = point.x;
-                }
 
                 if (point.z > max_z)
-                {
                     max_z = point.z;
-                }
 
                 if (point.z < min_z)
-                {
                     min_z = point.z;
-                }
             }
 
             using (Graphics g = Graphics.FromImage(bmp))
@@ -142,7 +133,6 @@ namespace Nav2Parser
         {
             using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}.obj", prefix, group)))
             {
-                int v = 1;
                 var navmesh = nav2.navmeshChunks[group];
                 foreach (var vertex in navmesh.navmeshChunkSubsection1Entries)
                 {
@@ -151,13 +141,11 @@ namespace Nav2Parser
                     var f3 = (float)vertex.z / (float)nav2.header.zDivisor;
 
                     file.WriteLine("v {0} {1} {2}", f1, f2, f3);
-                    v++;
                 }
 
                 int c = 0;
                 foreach (var chunk in nav2.segmentChunks[group].segmentChunkSubsection2Entries)
                 {
-
                     file.WriteLine("g chunk_{0}", c);
                     for (int i = 0; i < chunk.faces; i++)
                     {
@@ -203,8 +191,6 @@ namespace Nav2Parser
             {
                 using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_section2.obj", prefix, group)))
                 {
-                    int v = 1;
-
                     foreach (var section2_entry in nav2.section2Entries[0].subsection1Entries)
                     {
                         float x = (float)section2_entry.x / (float)nav2.header.xDivisor;

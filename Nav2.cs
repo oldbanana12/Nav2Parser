@@ -195,6 +195,7 @@ namespace Nav2Parser
 
             public NavworldSegmentGraphSubsection1Entry[] navworldSegmentGraphSubsection1Entries;
             public NavworldSegmentGraphSubsection2Entry[] navworldSegmentGraphSubsection2Entries;
+            public NavworldSegmentGraphSubsection3Entry[] navworldSegmentGraphSubsection3Entries;
         }
 
         public struct NavworldSegmentGraphSubsection1Entry
@@ -214,6 +215,42 @@ namespace Nav2Parser
             public byte u6;
             public byte offGroupEdges;
             public byte offMeshEdges;
+        }
+        public struct NavworldSegmentGraphSubsection3Entry
+        {
+            public NavworldSegmentGraphType1Edge[] type1Edges;
+            public NavworldSegmentGraphType2Edge[] type2Edges;
+            public NavworldSegmentGraphType3Edge[] type3Edges;
+        }
+
+        public struct NavworldSegmentGraphType1Edge
+        {
+            public ushort weight;
+            public ushort adjacentNode;
+            public byte extraBytes;
+            public byte u1;
+            public byte[] extraData;
+        }
+
+        public struct NavworldSegmentGraphType2Edge
+        {
+            public ushort groupId;
+            public ushort weight;
+            public ushort adjacentNode;
+            public byte extraBytes;
+            public byte u5;
+            public byte[] extraData;
+        }
+
+        public struct NavworldSegmentGraphType3Edge
+        {
+            public ushort u1;
+            public ushort groupId;
+            public ushort adjacentNode;
+            public ushort u4;
+            public byte extraBytes;
+            public byte u6;
+            public byte[] extraData;
         }
 
         public struct SegmentChunk
@@ -530,6 +567,7 @@ namespace Nav2Parser
 
             chunk.navworldSegmentGraphSubsection1Entries = new NavworldSegmentGraphSubsection1Entry[chunk.subsection1EntryCount];
             chunk.navworldSegmentGraphSubsection2Entries = new NavworldSegmentGraphSubsection2Entry[chunk.subsection1EntryCount];
+            chunk.navworldSegmentGraphSubsection3Entries = new NavworldSegmentGraphSubsection3Entry[chunk.subsection1EntryCount];
 
             chunk.uu3 = reader.ReadUInt16();
             chunk.totalEdges = reader.ReadUInt32();
@@ -562,6 +600,13 @@ namespace Nav2Parser
                 navworldSegmentGraphSubsection2Entry.offMeshEdges = reader.ReadByte();
 
                 chunk.navworldSegmentGraphSubsection2Entries[i] = navworldSegmentGraphSubsection2Entry;
+            }
+
+            reader.BaseStream.Position = startPosition + chunk.subsection3Offset;
+
+            for (int i = 0; i < chunk.subsection1EntryCount; i++)
+            {
+                NavworldSegmentGraphSubsection3Entry navworldSegmentGraphSubsection3Entry = chunk.navworldSegmentGraphSubsection3Entries[i];
             }
 
             segmentGraphs.Add(groupId, chunk);
