@@ -65,70 +65,6 @@ namespace Nav2Parser
             } //while
         } //Main
 
-        private static void ExtractNavworldBitmap(string prefix, Nav2 nav2, byte group)
-        {
-            Bitmap bmp = new Bitmap(2010, 2010);
-
-            var red_line_pen = new Pen(Color.Red, 2.5f);
-            uint numEdges = 0;
-
-            uint max_x = 0;
-            uint max_z = 0;
-            uint min_x = 0;
-            uint min_z = 0;
-
-            for (int i = 0; i < nav2.navWorlds[group].navWorldPoints.Length; i++)
-            {
-                var point = nav2.navWorlds[group].navWorldPoints[i];
-                if (point.x > max_x)
-                    max_x = point.x;
-
-                if (point.x < min_x)
-                    min_x = point.x;
-
-                if (point.z > max_z)
-                    max_z = point.z;
-
-                if (point.z < min_z)
-                    min_z = point.z;
-            }
-
-            using (Graphics g = Graphics.FromImage(bmp))
-            {
-                var length = nav2.navWorlds[group].navWorldPoints.Length;
-                for (int i = 0; i < length; i++)
-                {
-                    var point = nav2.navWorlds[group].navWorldPoints[i];
-
-                    var x = 2005.0f * (point.x - min_x) / (max_x - min_x);
-                    var z = 2005.0f * (point.z - min_z) / (max_z - min_z);
-
-                    g.FillEllipse(Brushes.Blue, x - 2.5f, z - 2.5f, 5.0f, 5.0f);
-
-                    var n_edges = nav2.navWorlds[group].navWorldSubsection3Entries[i].adjacentNodeIndices.Length;
-                    for (int j = 0; j < n_edges; j++)
-                    {
-                        var adjacent_index = nav2.navWorlds[group].navWorldSubsection3Entries[i].adjacentNodeIndices[j];
-                        var adjacent = nav2.navWorlds[group].navWorldPoints[adjacent_index];
-
-                        var adjacent_x = 2005.0f * (adjacent.x - min_x) / (max_x - min_x);
-                        var adjacent_z = 2005.0f * (adjacent.z - min_z) / (max_z - min_z);
-
-                        var edge_index = nav2.navWorlds[group].navWorldSubsection3Entries[i].edgeIndices[j];
-                        var edge = nav2.navWorlds[group].navWorldEdges[edge_index];
-
-                        g.DrawLine(red_line_pen, x, z, adjacent_x, adjacent_z);
-
-                        g.DrawString(edge.weight.ToString(), SystemFonts.DefaultFont, Brushes.Black, (x + adjacent_x) / 2, (z + adjacent_z) / 2);
-                        numEdges++;
-
-                    }
-                }
-            }
-
-            bmp.Save(string.Format("{0}_navworld_graph{1}.png", prefix, group), ImageFormat.Png);
-        }
-
         private static void ExtractNavmesh(string prefix, Nav2 nav2, byte group)
         {
             using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}.obj", prefix, group)))
@@ -235,6 +171,70 @@ namespace Nav2Parser
                     }
                 }
             }
+        }
+
+        private static void ExtractNavworldBitmap(string prefix, Nav2 nav2, byte group)
+        {
+            Bitmap bmp = new Bitmap(2010, 2010);
+
+            var red_line_pen = new Pen(Color.Red, 2.5f);
+            uint numEdges = 0;
+
+            uint max_x = 0;
+            uint max_z = 0;
+            uint min_x = 0;
+            uint min_z = 0;
+
+            for (int i = 0; i < nav2.navWorlds[group].navWorldPoints.Length; i++)
+            {
+                var point = nav2.navWorlds[group].navWorldPoints[i];
+                if (point.x > max_x)
+                    max_x = point.x;
+
+                if (point.x < min_x)
+                    min_x = point.x;
+
+                if (point.z > max_z)
+                    max_z = point.z;
+
+                if (point.z < min_z)
+                    min_z = point.z;
+            }
+
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                var length = nav2.navWorlds[group].navWorldPoints.Length;
+                for (int i = 0; i < length; i++)
+                {
+                    var point = nav2.navWorlds[group].navWorldPoints[i];
+
+                    var x = 2005.0f * (point.x - min_x) / (max_x - min_x);
+                    var z = 2005.0f * (point.z - min_z) / (max_z - min_z);
+
+                    g.FillEllipse(Brushes.Blue, x - 2.5f, z - 2.5f, 5.0f, 5.0f);
+
+                    var n_edges = nav2.navWorlds[group].navWorldSubsection3Entries[i].adjacentNodeIndices.Length;
+                    for (int j = 0; j < n_edges; j++)
+                    {
+                        var adjacent_index = nav2.navWorlds[group].navWorldSubsection3Entries[i].adjacentNodeIndices[j];
+                        var adjacent = nav2.navWorlds[group].navWorldPoints[adjacent_index];
+
+                        var adjacent_x = 2005.0f * (adjacent.x - min_x) / (max_x - min_x);
+                        var adjacent_z = 2005.0f * (adjacent.z - min_z) / (max_z - min_z);
+
+                        var edge_index = nav2.navWorlds[group].navWorldSubsection3Entries[i].edgeIndices[j];
+                        var edge = nav2.navWorlds[group].navWorldEdges[edge_index];
+
+                        g.DrawLine(red_line_pen, x, z, adjacent_x, adjacent_z);
+
+                        g.DrawString(edge.weight.ToString(), SystemFonts.DefaultFont, Brushes.Black, (x + adjacent_x) / 2, (z + adjacent_z) / 2);
+                        numEdges++;
+
+                    }
+                }
+            }
+
+            bmp.Save(string.Format("{0}_navworld_graph{1}.png", prefix, group), ImageFormat.Png);
         }
     } //class
 } //namespace
