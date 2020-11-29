@@ -171,9 +171,10 @@ namespace Nav2Parser
             public byte vertex3;
             public byte vertex4;
 
-            public byte u6a;
-            public byte u6b;
-            public byte u6c;
+            public byte edgeIndex1;
+            public byte edgeIndex2;
+            public byte edgeIndex3;
+            public byte edgeIndex4;
         }
 
         public struct NavworldSegmentGraph
@@ -227,9 +228,9 @@ namespace Nav2Parser
         {
             public ushort weight;
             public ushort adjacentNode;
-            public byte extraBytes;
+            public byte adjacentEdgeCount;
             public byte u1;
-            public byte[] extraData;
+            public byte[] adjacentEdges;
         }
 
         public struct NavworldSegmentGraphType2Edge
@@ -237,9 +238,9 @@ namespace Nav2Parser
             public ushort groupId;
             public ushort weight;
             public ushort adjacentNode;
-            public byte extraBytes;
+            public byte adjacentEdgeCount;
             public byte u5;
-            public byte[] extraData;
+            public byte[] adjacentEdges;
         }
 
         public struct NavworldSegmentGraphType3Edge
@@ -248,9 +249,9 @@ namespace Nav2Parser
             public ushort groupId;
             public ushort adjacentNode;
             public ushort u4;
-            public byte extraBytes;
+            public byte adjacentEdgeCount;
             public byte u6;
-            public byte[] extraData;
+            public byte[] adjacentEdges;
         }
 
         public struct SegmentChunk
@@ -606,7 +607,79 @@ namespace Nav2Parser
 
             for (int i = 0; i < chunk.subsection1EntryCount; i++)
             {
-                NavworldSegmentGraphSubsection3Entry navworldSegmentGraphSubsection3Entry = chunk.navworldSegmentGraphSubsection3Entries[i];
+                var navworldSegmentGraphSubsection3Entry = chunk.navworldSegmentGraphSubsection3Entries[i];
+
+                var type1EdgeCount = chunk.navworldSegmentGraphSubsection2Entries[i].nEdges;
+                var type2EdgeCount = chunk.navworldSegmentGraphSubsection2Entries[i].offGroupEdges;
+                var type3EdgeCount = chunk.navworldSegmentGraphSubsection2Entries[i].offMeshEdges;
+                navworldSegmentGraphSubsection3Entry.type1Edges = new NavworldSegmentGraphType1Edge[type1EdgeCount];
+                navworldSegmentGraphSubsection3Entry.type2Edges = new NavworldSegmentGraphType2Edge[type2EdgeCount];
+                navworldSegmentGraphSubsection3Entry.type3Edges = new NavworldSegmentGraphType3Edge[type3EdgeCount];
+
+                for (int j = 0; j < type1EdgeCount; j++)
+                {
+                    var navworldSegmentGraphType1Edge = navworldSegmentGraphSubsection3Entry.type1Edges[j];
+                    navworldSegmentGraphType1Edge.weight = reader.ReadUInt16();
+                    navworldSegmentGraphType1Edge.adjacentNode = reader.ReadUInt16();
+                    navworldSegmentGraphType1Edge.adjacentEdgeCount = reader.ReadByte();
+                    navworldSegmentGraphType1Edge.adjacentEdges = new byte[navworldSegmentGraphType1Edge.adjacentEdgeCount];
+                    navworldSegmentGraphType1Edge.u1 = reader.ReadByte();
+
+                    navworldSegmentGraphSubsection3Entry.type1Edges[j] = navworldSegmentGraphType1Edge;
+                }
+
+                for (int j = 0; j < type2EdgeCount; j++)
+                {
+                    var navworldSegmentGraphType2Edge = navworldSegmentGraphSubsection3Entry.type2Edges[j];
+                    navworldSegmentGraphType2Edge.groupId = reader.ReadUInt16();
+                    navworldSegmentGraphType2Edge.weight = reader.ReadUInt16();
+                    navworldSegmentGraphType2Edge.adjacentNode = reader.ReadUInt16();
+                    navworldSegmentGraphType2Edge.adjacentEdgeCount = reader.ReadByte();
+                    navworldSegmentGraphType2Edge.adjacentEdges = new byte[navworldSegmentGraphType2Edge.adjacentEdgeCount];
+                    navworldSegmentGraphType2Edge.u5 = reader.ReadByte();
+
+                    navworldSegmentGraphSubsection3Entry.type2Edges[j] = navworldSegmentGraphType2Edge;
+                }
+
+                for (int j = 0; j < type3EdgeCount; j++)
+                {
+                    var navworldSegmentGraphType3Edge = navworldSegmentGraphSubsection3Entry.type3Edges[j];
+                    navworldSegmentGraphType3Edge.u1 = reader.ReadUInt16();
+                    navworldSegmentGraphType3Edge.groupId = reader.ReadUInt16();
+                    navworldSegmentGraphType3Edge.adjacentNode = reader.ReadUInt16();
+                    navworldSegmentGraphType3Edge.u4 = reader.ReadUInt16();
+                    navworldSegmentGraphType3Edge.adjacentEdgeCount = reader.ReadByte();
+                    navworldSegmentGraphType3Edge.adjacentEdges = new byte[navworldSegmentGraphType3Edge.adjacentEdgeCount];
+                    navworldSegmentGraphType3Edge.u6 = reader.ReadByte();
+
+                    navworldSegmentGraphSubsection3Entry.type3Edges[j] = navworldSegmentGraphType3Edge;
+                }
+
+                for (int j = 0; j < type1EdgeCount; j++)
+                {
+                    for (int k = 0; k < navworldSegmentGraphSubsection3Entry.type1Edges[j].adjacentEdgeCount; k++)
+                    {
+                        navworldSegmentGraphSubsection3Entry.type1Edges[j].adjacentEdges[k] = reader.ReadByte();
+                    }
+                }
+
+                for (int j = 0; j < type2EdgeCount; j++)
+                {
+                    for (int k = 0; k < navworldSegmentGraphSubsection3Entry.type2Edges[j].adjacentEdgeCount; k++)
+                    {
+                        navworldSegmentGraphSubsection3Entry.type2Edges[j].adjacentEdges[k] = reader.ReadByte();
+                    }
+                }
+
+                for (int j = 0; j < type3EdgeCount; j++)
+                {
+                    for (int k = 0; k < navworldSegmentGraphSubsection3Entry.type3Edges[j].adjacentEdgeCount; k++)
+                    {
+                        navworldSegmentGraphSubsection3Entry.type3Edges[j].adjacentEdges[k] = reader.ReadByte();
+                    }
+                }
+
+                chunk.navworldSegmentGraphSubsection3Entries[i] = navworldSegmentGraphSubsection3Entry;
             }
 
             segmentGraphs.Add(groupId, chunk);
@@ -737,9 +810,13 @@ namespace Nav2Parser
                     navmeshChunkSubsection3Entry.vertex4 = reader.ReadByte();
                 }
 
-                navmeshChunkSubsection3Entry.u6a = reader.ReadByte();
-                navmeshChunkSubsection3Entry.u6b = reader.ReadByte();
-                navmeshChunkSubsection3Entry.u6c = reader.ReadByte();
+                navmeshChunkSubsection3Entry.edgeIndex1 = reader.ReadByte();
+                navmeshChunkSubsection3Entry.edgeIndex2 = reader.ReadByte();
+                navmeshChunkSubsection3Entry.edgeIndex3 = reader.ReadByte();
+                if (size != 0)
+                {
+                    navmeshChunkSubsection3Entry.edgeIndex4 = reader.ReadByte();
+                }
 
                 chunk.navmeshChunkSubsection3Entries[i] = navmeshChunkSubsection3Entry;
             }
