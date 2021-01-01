@@ -8,4 +8,4 @@ Parses information from MGS:TPP .nav2 files. Most of the fields within the files
 
 `Nav2Parser.exe \path\to\file.nav2`
 
-.obj files representing the various pieces of the navmesh within the .nav2 file will be exported to the working directory with the same basename as the input file. You can further inspect the content of the file using the CLI interface that the program presents.
+.obj and .png files representing the various data structures of the navmesh within the .nav2 file will be exported to the working directory with the same basename as the input file. You can further inspect the content of the file using the CLI interface that the program presents.
