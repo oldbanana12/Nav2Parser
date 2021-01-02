@@ -46,8 +46,8 @@ namespace Nav2Parser
             public byte u1b;
             public ushort u2;
             public uint payloadOffset;
-            public byte entrySize;
-            public ushort n4;
+            public ushort entrySize;
+            public byte n4;
         } //ManifestEntry
 
         private struct Manifest
@@ -499,8 +499,8 @@ namespace Nav2Parser
                     entry.u1b = reader.ReadByte();
                     entry.u2 = reader.ReadUInt16();
                     entry.payloadOffset = reader.ReadUInt32();
-                    entry.entrySize = reader.ReadByte();
-                    entry.n4 = reader.ReadUInt16();
+                    entry.entrySize = reader.ReadUInt16();
+                    entry.n4 = reader.ReadByte();
 
                     manifest.manifestEntries[j] = entry;
                 } //for
