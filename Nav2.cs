@@ -318,8 +318,8 @@ namespace Nav2Parser
         }
         public struct Section2Subsection2Entry
         {
-            public ushort[] u1;
-            public ushort[] u2;
+            public ushort[] weight;
+            public ushort[] adjacentNodes;
             public ushort[] u3;
         }
 
@@ -419,14 +419,14 @@ namespace Nav2Parser
                 for (int j = 0; j < entry.subEntryCount; j++)
                 {
                     var subentry = entry.subsection2Entries[j];
-                    subentry.u1 = new ushort[entry.subsection1Entries[j].countA];
-                    subentry.u2 = new ushort[entry.subsection1Entries[j].countA];
+                    subentry.weight = new ushort[entry.subsection1Entries[j].countA];
+                    subentry.adjacentNodes = new ushort[entry.subsection1Entries[j].countA];
                     subentry.u3 = new ushort[entry.subsection1Entries[j].countB];
 
                     for (int k = 0; k < entry.subsection1Entries[j].countA; k++)
                     {
-                        subentry.u1[k] = reader.ReadUInt16();
-                        subentry.u2[k] = reader.ReadUInt16();
+                        subentry.weight[k] = reader.ReadUInt16();
+                        subentry.adjacentNodes[k] = reader.ReadUInt16();
                     }
 
                     for (int k = 0; k < entry.subsection1Entries[j].countB; k++)

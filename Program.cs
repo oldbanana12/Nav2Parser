@@ -138,9 +138,9 @@ namespace Nav2Parser
 
                     for (int i = 0; i < nav2.section2Entries[0].subsection1Entries.Length; i++)
                     {
-                        for (int j = 0; j < nav2.section2Entries[0].subsection2Entries[i].u2.Length; j++)
+                        for (int j = 0; j < nav2.section2Entries[0].subsection2Entries[i].adjacentNodes.Length; j++)
                         {
-                            var adjacentEdge = nav2.section2Entries[0].subsection2Entries[i].u2[j];
+                            var adjacentEdge = nav2.section2Entries[0].subsection2Entries[i].adjacentNodes[j];
                             file.WriteLine("l {0} {1}", i + 1, adjacentEdge + 1);
                         }
                     }
