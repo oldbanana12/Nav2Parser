@@ -27,10 +27,11 @@ namespace Nav2Parser
             {
                 ExtractNavmesh(prefix, nav2, group);
                 ExtractSegmentGraph(prefix, nav2, group);
-                ExtractSection2(prefix, nav2, group);
                 ExtractNavworld(prefix, nav2, group);
                 ExtractNavworldBitmap(prefix, nav2, group);
             }
+
+            ExtractSection2(prefix, nav2);
 
             while (!exit)
             {
@@ -121,11 +122,11 @@ namespace Nav2Parser
             }
         }
 
-        private static void ExtractSection2(string prefix, Nav2 nav2, byte group)
+        private static void ExtractSection2(string prefix, Nav2 nav2)
         {
             if (nav2.header.section2EntryCount > 0)
             {
-                using (StreamWriter file = new StreamWriter(String.Format("{0}_group{1}_section2.obj", prefix, group)))
+                using (StreamWriter file = new StreamWriter(String.Format("{0}_section2.obj", prefix)))
                 {
                     foreach (var section2_entry in nav2.section2Entries[0].subsection1Entries)
                     {
