@@ -73,9 +73,9 @@ namespace Nav2Parser
                 var navmesh = nav2.navmeshChunks[group];
                 foreach (var vertex in navmesh.navmeshChunkSubsection1Entries)
                 {
-                    var f1 = (float)vertex.x / (float)nav2.header.xDivisor;
-                    var f2 = (float)vertex.y / (float)nav2.header.yDivisor;
-                    var f3 = (float)vertex.z / (float)nav2.header.zDivisor;
+                    var f1 = ((float)vertex.x / (float)nav2.header.xDivisor) + nav2.header.origin.x;
+                    var f2 = ((float)vertex.y / (float)nav2.header.yDivisor) + nav2.header.origin.y;
+                    var f3 = ((float)vertex.z / (float)nav2.header.zDivisor) + nav2.header.origin.z;
 
                     file.WriteLine("v {0} {1} {2}", f1, f2, f3);
                 }
@@ -107,9 +107,9 @@ namespace Nav2Parser
 
                 foreach (var node in nav2.segmentGraphs[group].navworldSegmentGraphSubsection1Entries)
                 {
-                    float x = (float)node.x / (float)nav2.header.xDivisor;
-                    float y = (float)node.y / (float)nav2.header.yDivisor;
-                    float z = (float)node.z / (float)nav2.header.zDivisor;
+                    float x = ((float)node.x / (float)nav2.header.xDivisor) + nav2.header.origin.x;
+                    float y = ((float)node.y / (float)nav2.header.yDivisor) + nav2.header.origin.y;
+                    float z = ((float)node.z / (float)nav2.header.zDivisor) + nav2.header.origin.z;
 
                     file.WriteLine("v {0} {1} {2}", x - 0.5, y + 0.5, z - 0.5);
                     file.WriteLine("v {0} {1} {2}", x - 0.5, y + 0.5, z + 0.5);
@@ -130,9 +130,9 @@ namespace Nav2Parser
                 {
                     foreach (var section2_entry in nav2.section2Entries[0].subsection1Entries)
                     {
-                        float x = (float)section2_entry.x / (float)nav2.header.xDivisor;
-                        float y = (float)section2_entry.y / (float)nav2.header.yDivisor;
-                        float z = (float)section2_entry.z / (float)nav2.header.zDivisor;
+                        float x = ((float)section2_entry.x / (float)nav2.header.xDivisor) + nav2.header.origin.x;
+                        float y = ((float)section2_entry.y / (float)nav2.header.yDivisor) + nav2.header.origin.y;
+                        float z = ((float)section2_entry.z / (float)nav2.header.zDivisor) + nav2.header.origin.z;
 
                         file.WriteLine("v {0} {1} {2}", x, y, z);
                     }
@@ -156,9 +156,9 @@ namespace Nav2Parser
                 for (int i = 0; i < nav2.navWorlds[group].navWorldPoints.Length; i++)
                 {
                     var point = nav2.navWorlds[group].navWorldPoints[i];
-                    float x = (float)point.x / (float)nav2.header.xDivisor;
-                    float y = (float)point.y / (float)nav2.header.yDivisor;
-                    float z = (float)point.z / (float)nav2.header.zDivisor;
+                    float x = ((float)point.x / (float)nav2.header.xDivisor) + nav2.header.origin.x;
+                    float y = ((float)point.y / (float)nav2.header.yDivisor) + nav2.header.origin.y;
+                    float z = ((float)point.z / (float)nav2.header.zDivisor) + nav2.header.origin.z;
 
                     file.WriteLine("v {0} {1} {2}", x, y, z);
                 }
