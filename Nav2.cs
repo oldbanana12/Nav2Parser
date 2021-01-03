@@ -590,8 +590,10 @@ namespace Nav2Parser
             {
                 NavworldSegmentGraphSubsection2Entry navworldSegmentGraphSubsection2Entry = chunk.navworldSegmentGraphSubsection2Entries[i];
                 navworldSegmentGraphSubsection2Entry.subsection3Index = reader.ReadUInt32();
-                navworldSegmentGraphSubsection2Entry.nEdges = (byte)(navworldSegmentGraphSubsection2Entry.subsection3Index & 0xff);
-                navworldSegmentGraphSubsection2Entry.subsection3Index &= 0xffffff00;
+                navworldSegmentGraphSubsection2Entry.subsection3Index &= 0x00ffffff;
+
+                reader.BaseStream.Position -= 1;
+                navworldSegmentGraphSubsection2Entry.nEdges = reader.ReadByte();
 
                 navworldSegmentGraphSubsection2Entry.u3 = reader.ReadInt16();
                 navworldSegmentGraphSubsection2Entry.u4 = reader.ReadUInt16();
@@ -603,10 +605,9 @@ namespace Nav2Parser
                 chunk.navworldSegmentGraphSubsection2Entries[i] = navworldSegmentGraphSubsection2Entry;
             }
 
-            reader.BaseStream.Position = startPosition + chunk.subsection3Offset;
-
             for (int i = 0; i < chunk.subsection1EntryCount; i++)
             {
+                reader.BaseStream.Position = startPosition + chunk.subsection3Offset + (chunk.navworldSegmentGraphSubsection2Entries[i].subsection3Index * 2);
                 var navworldSegmentGraphSubsection3Entry = chunk.navworldSegmentGraphSubsection3Entries[i];
 
                 var type1EdgeCount = chunk.navworldSegmentGraphSubsection2Entries[i].nEdges;
